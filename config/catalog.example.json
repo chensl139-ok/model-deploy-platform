@@ -1,0 +1,28 @@
+[
+  {
+    "id": "my-model",
+    "name": "我的模型",
+    "version": "v1",
+    "family": "Qwen",
+    "description": "由管理员验证适配的模型。请替换所有示例值后使用。",
+    "initials": "Q",
+    "color": "violet",
+    "framework": "vLLM",
+    "servedModelName": "my-model",
+    "modelKey": "my-model",
+    "modelRevision": "v1",
+    "variants": [
+      {
+        "id": "48gb",
+        "label": "半卡 · 48GB",
+        "memoryGB": 48,
+        "description": "RTX PRO 6000 Blackwell · 单实例",
+        "recommended": true,
+        "clusterId": 70001,
+        "namespace": "inference-tob",
+        "targetId": "880e5ca1-6c77-4189-b3ab-616d8c95b09a",
+        "runtimePackageId": "<构建完成后的真实运行包ID>"
+      }
+    ]
+  }
+]

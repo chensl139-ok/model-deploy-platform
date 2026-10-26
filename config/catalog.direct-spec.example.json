@@ -1,0 +1,39 @@
+[
+  {
+    "id": "my-model",
+    "name": "我的模型",
+    "version": "v1",
+    "family": "Qwen",
+    "description": "完整 IO Spec 模板。需管理员核对目标 schema、镜像、权重挂载、GPU 和容量。",
+    "initials": "Q",
+    "color": "violet",
+    "framework": "vLLM",
+    "servedModelName": "my-model",
+    "variants": [
+      {
+        "id": "48gb",
+        "label": "半卡 · 48GB",
+        "memoryGB": 48,
+        "description": "单实例，规格描述需与 spec 一致",
+        "recommended": true,
+        "clusterId": 12345,
+        "namespace": "example-namespace",
+        "spec": {
+          "modelRef": { "name": "my-model", "version": "v1" },
+          "backend": { "type": "NativeDeployment" },
+          "runtime": {
+            "image": "<registry>/<project>/<image>@sha256:<真实摘要>",
+            "ports": [{ "name": "http", "containerPort": 8000 }],
+            "resources": {
+              "requests": { "cpu": "2", "memory": "8Gi", "nvidia.com/mig-2g.48gb": "1" },
+              "limits": { "cpu": "4", "memory": "16Gi", "nvidia.com/mig-2g.48gb": "1" }
+            }
+          },
+          "rollout": { "replicas": 1 },
+          "service": { "enabled": true, "type": "ClusterIP", "port": 8000 },
+          "capacity": { "maxConcurrentRequestsPerPod": 1 }
+        }
+      }
+    ]
+  }
+]

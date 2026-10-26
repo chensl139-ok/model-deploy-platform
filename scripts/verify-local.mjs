@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+const base='http://localhost:3201';
+const password=readFileSync('data/orbstack-login.txt','utf8').match(/密码：([^\n]+)/)[1];
+let r=await fetch(base+'/api/health');assert.equal(r.status,200);
+r=await fetch(base+'/api/services');assert.equal(r.status,401);
+r=await fetch(base+'/api/login',{method:'POST',headers:{'content-type':'application/json',origin:base},body:JSON.stringify({username:'admin',password})});assert.equal(r.status,200);
+const cookie=r.headers.get('set-cookie').split(';')[0];
+const get=async(path)=>{const res=await fetch(base+'/api'+path,{headers:{cookie}});assert.equal(res.status,200,path);return res.json();};
+const boot=await get('/bootstrap');assert.equal(boot.mode,'live');
+const connection=await get('/connection');assert.equal(connection.available,true);
+const list=await get('/services');const services=Array.isArray(list)?list:list.items;
+assert.equal(services.length,1);const s=services[0];assert.equal(s.status,'running');assert.equal(s.readyReplicas,2);
+const detail=await get('/services/'+s.id),logs=await get('/services/'+s.id+'/logs');assert.ok(logs.items.length);
+r=await fetch(s.endpoint.address+'/v1/chat/completions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({model:'smollm2',messages:[{role:'user',content:'Say hello briefly.'}],max_tokens:20,temperature:0}),signal:AbortSignal.timeout(30000)});assert.equal(r.status,200);const completion=await r.json();assert.ok(completion.choices[0].message.content);
+const result={at:new Date().toISOString(),url:base,health:true,authentication:true,cluster:true,service:s.name,replicas:s.readyReplicas,logs:true,inference:true,reply:completion.choices[0].message.content};
+mkdirSync('artifacts',{recursive:true});writeFileSync('artifacts/recovery-verification.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));

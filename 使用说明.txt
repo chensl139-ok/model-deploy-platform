@@ -1,0 +1,23 @@
+Launchpad 推理部署平台
+
+打开：http://localhost:3201
+桌面入口：推理部署平台.webloc
+用户名：admin
+密码：查看本目录 data/orbstack-login.txt
+
+平台已设置后台运行，并在登录电脑时自动启动。
+手动启动：双击“启动平台.command”
+手动停止：双击“停止平台.command”
+模型服务依赖 OrbStack；请保持 OrbStack 运行。
+
+当前恢复的模型：SmolLM2 135M，真实 CPU 推理，2 个副本。
+GPU 推理需要另外接入有 GPU 的集群并配置镜像、权重和资源。
+本机平台地址不是公网地址。
+
+源码、配置及数据库均保存在当前目录。backups 中另有源码压缩包和数据库快照。
+
+公网访问（2026-10-26 已开启）
+桌面入口：推理部署平台-公网.webloc
+当前地址保存在 data/review-url.txt；沿用 admin 账号与原密码。
+后台服务同时管理平台与 Cloudflare 隧道。电脑需要开机、联网，OrbStack 需要运行。
+临时域名可能在重启后变化；桌面的公网快捷方式会自动更新。分享地址时以 data/review-url.txt 为准。

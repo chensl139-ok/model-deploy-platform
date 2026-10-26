@@ -1,0 +1,24 @@
+import { spawn } from 'node:child_process';
+import { existsSync, writeFileSync, mkdirSync, appendFileSync } from 'node:fs';
+if (!existsSync('.env.orbstack')) throw new Error('请先按 config/orbstack.env.example 配置 .env.orbstack，并设置管理员密码。');
+const tunnel = spawn('cloudflared', ['tunnel', '--url', 'http://127.0.0.1:3201', '--protocol', 'http2', '--no-autoupdate'], { stdio: ['ignore', 'pipe', 'pipe'] });
+let app; let stopping = false; let buffer = '';
+const stop = () => { if (stopping) return; stopping = true; tunnel.kill('SIGTERM'); app?.kill('SIGTERM'); };
+for (const signal of ['SIGINT','SIGTERM']) process.once(signal, stop);
+const timer = setTimeout(() => { console.error('未能取得公网地址，请检查网络和 cloudflared。'); stop(); }, 60000);
+for (const stream of [tunnel.stdout, tunnel.stderr]) stream.on('data', chunk => {
+  appendFileSync('data/tunnel.log', chunk);
+  buffer = (buffer + chunk.toString()).slice(-16000);
+  if (app) return;
+  const url = buffer.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/)?.[0];
+  if (!url) return;
+  clearTimeout(timer);
+  app = spawn(process.execPath, ['--env-file=.env.orbstack', 'dist/server/index.js'], { env: { ...process.env, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: '3201', PUBLIC_ORIGIN: url, ADDITIONAL_ORIGINS: 'http://localhost:3201,http://127.0.0.1:3201', TRUST_PROXY: 'true' }, stdio: 'inherit' });
+  mkdirSync('data', { recursive: true }); writeFileSync('data/review-url.txt', `${url}\n`, { mode: 0o600 });
+  writeFileSync('公网访问.webloc', `<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>URL</key><string>${url}</string></dict></plist>\n`);
+  writeFileSync('../推理部署平台-公网.webloc', `<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>URL</key><string>${url}</string></dict></plist>\n`);
+  console.log(`\n公网评审：${url}\n使用 .env.orbstack 中的管理员账号登录；Ctrl+C 同时停止应用与隧道。\n`);
+  app.on('error', error => { console.error(error.message); stop(); }); app.on('close', stop);
+});
+tunnel.on('error', error => { clearTimeout(timer); console.error(error.message); stop(); });
+tunnel.on('close', () => { clearTimeout(timer); if (!stopping) { console.error('公网隧道已停止。'); stop(); } });

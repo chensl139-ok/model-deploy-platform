@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.env
+.env.*
+data
+backups
+tests
+config/catalog.json
+*.log
+
+config/registry-auth*.json
+config/kubeconfig*

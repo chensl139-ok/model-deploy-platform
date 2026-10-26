@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+const base=readFileSync('data/review-url.txt','utf8').trim();
+const password=readFileSync('data/orbstack-login.txt','utf8').match(/密码：([^\n]+)/)[1];
+const request=(path,options={})=>fetch(base+path,{...options,signal:AbortSignal.timeout(20000)});
+let r=await request('/');assert.equal(r.status,200);assert.match(await r.text(),/Launchpad/);assert.ok(r.headers.get('content-security-policy'));
+r=await request('/api/services');assert.equal(r.status,401);
+r=await request('/api/login',{method:'POST',headers:{'content-type':'application/json',origin:base},body:JSON.stringify({username:'admin',password})});assert.equal(r.status,200);
+const setCookie=r.headers.get('set-cookie');assert.match(setCookie,/HttpOnly/i);assert.match(setCookie,/Secure/i);
+const cookie=setCookie.split(';')[0];r=await request('/api/bootstrap',{headers:{cookie}});assert.equal(r.status,200);const boot=await r.json();assert.equal(boot.mode,'live');
+r=await request('/api/services',{headers:{cookie}});assert.equal(r.status,200);const services=await r.json();
+r=await request('/api/connection',{headers:{cookie}});assert.equal(r.status,200);assert.equal((await r.json()).available,true);
+r=await request('/api/logout',{method:'POST',headers:{cookie,origin:'https://invalid.example','content-type':'application/json'},body:'{}'});assert.equal(r.status,403);
+const evidence={at:new Date().toISOString(),url:base,https:true,login:true,secureHttpOnlyCookie:true,unauthenticatedBlocked:true,invalidOriginBlocked:true,clusterConnected:true,services};writeFileSync('artifacts/public-verification.json',JSON.stringify(evidence,null,2));console.log(JSON.stringify({url:base,verified:true}));

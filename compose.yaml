@@ -1,0 +1,53 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3100
+      TRUST_PROXY: "true"
+      DATABASE_PATH: /app/data/launchpad.sqlite
+      CATALOG_PATH: /app/config/catalog.json
+    volumes:
+      - app_data:/app/data
+      - backup_data:/app/backups
+      - ./config:/app/config:ro
+    expose:
+      - "3100"
+    networks: [internal, outbound]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 120s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?请先在 .env 中配置真实域名}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app: { condition: service_healthy }
+    networks: [internal, outbound]
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+networks:
+  internal:
+    internal: true
+  outbound: {}
+volumes:
+  app_data: {}
+  backup_data: {}
+  caddy_data: {}
+  caddy_config: {}
